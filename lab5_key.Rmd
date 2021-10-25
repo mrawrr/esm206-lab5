@@ -2,29 +2,95 @@
 title: "lab5"
 author: "Meghna Rao"
 date: "10/25/2021"
-output: html_document
+output: 
+  html_document: 
+    theme: yeti
+    toc: yes
+    code_folding: hide
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include= TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(effsize)
 ```
 
-## R Markdown
+# Additional ways to customize R markdown
+If you don't want to track Html files - you can put them in the gitignore folder
+- you can also put data in there `*.html`
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+click setting in r markdown, scroll down to the bottom to output section and explore `output options` it will change the theme of your knit file
+- try including a table of contents - check yamel 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Code folding
+giving user the option to see code if they want to but you wan to hide it
+in the yamel under `toc: yes`
+add in `code_folding: hide`
 
-```{r cars}
-summary(cars)
+# Standard deviation
+
+## Part 1: Confidence Intervals
+
+In this section, we'll use the `t.test()` function to calculate confidence intervals.
+
+### Example 1
+
+Create a single mock sample containing a number of values, then learn to use `t.test()` to return confidence intervals, and learn about in-line code referencing so our text becomes more reproducible, too.
+
+```{r}
+# Create a mock sample
+# create a vector using `c()`
+
+otter_lengths <- c(30, 45, 28, 31, 34, 46, 52, 29)
+
+# lets assume some normality function makes sense here
+# here we dont know the population variance and can't use the z distribution so we will use the t distribution to take uncertaintiy into account as well as sample size
+
+# Find confidence interval for t distribution using `t.test(otter_lengths)
+
+t.test(otter_lengths)
+
+# default null hypothesis for this test, gives us the low value of 29.1 and high of 44.64. It means that if shes saying that otter lengths are in inches, what does that confidence interval actually mean?
+```
+Confidence interval - if we took multiple samples from this and calculated a confidence interval for each of them, we would expect that 95% of the confidence intervals calculated would contain the population mean. 
+
+The output confidence interval might not include the true population parameter.
+
+Problem's with writing out your confidence interval like this: "The mean otter length is 36.9 inches with a 95% confidence interval of [29.1, 44.7] inches"
+
+- need to include sample size
+"The mean otter length is 36.9 inches (n=8) with a 95% confidence interval of [29.1, 44.7] inches"
+
+- include some sort of parameter (find standard deviation)
+
+```{r}
+# find standard deviation
+sd(otter_lengths)
+```
+"The mean otter length is 36.9 inches $\pm$ 9.3 (mean $\pm$ sd, n=8) with a 95% confidence interval of [29.1, 44.7] inches"
+
+- Now the info is in here, its good, but manually typing in manually means theres an opportunity to mistype the value when you do it by hand. It's dangerous to try to update the text you are including. so we want to build in ways to have the outputs of our code directly tie to the text that's trying to explain that. use inline referencing to refer to outputs of code. need to create and store the outputs
+
+```{r}
+otter_ci <- t.test(otter_lengths)
+
+otter_sd <- sd(otter_lengths)
 ```
 
-## Including Plots
+- now that you've named things, you can find what the names are for things, check in the console for names if you forget `?t.test` it will populate in the help section
+- to call elements of a list use a single dollar sign and the value name you're trying to pull ex `otter_ci$` or `otter_ci$statistic`
+- once an object is created an stored, look at the values section of the help section to find what the elements of that object are.
 
-You can also embed plots, for example:
+### Now using inline referencing
+Now, use the value stored as estimate within `otter_ci` called `statistic`
+- add active code within your text with mini code chucks by adding `r`and hit cmd enter to see what the value will be.
+- now values created in code can be inline
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+"Mean otter length is `r otter_ci$estimate`"
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+- Suppose you want to edit the text of your inline code
+- round your value with `r_round`
+
+"Mean otter length is `r round(otter_ci$estimate, 1)` inches"
+
+If ever your sample changes, the inline code will automatically update.
