@@ -94,3 +94,151 @@ Now, use the value stored as estimate within `otter_ci` called `statistic`
 "Mean otter length is `r round(otter_ci$estimate, 1)` inches"
 
 If ever your sample changes, the inline code will automatically update.
+
+- in confidence interval term if we just put in `otter_ci$conf.int` it will return a vector of length 2 with a low value for the confidence interval and a high value for the confidence interval.
+- how can you pull those values? use `[#]` if you want the first value in the vector put a 1 in the # or if you want the second one put a 2 in
+
+### Example of using a confidence interval and inline referencing
+
+"Mean otter length is `r round(otter_ci$estimate, 1)` inches with a 95% confidence interval of [`r round(otter_ci$conf.int[1], 2)`, `r round(otter_ci$conf.int[2], 2)`] inches"
+
+- really valuable with reproducible writing
+
+## Part 2: Two sample t test
+
+If i take in two samples, ask if the sample means are so different that we can reject the null hypothesis that they were drawn from populations with the same mean
+
+### Example 1
+
+Make two mock samples, and ask the question: do we have sufficient evidence to make us reject the null hypothesis that theses samples were drawn from populations with the same mean?
+
+```{r}
+# make my mock sampls
+oak_trees <- c(20, 19, 24, 28, 34, 12, 15, 25)
+  
+pine_trees <- c(39, 26, 20, 30, 37, 22, 19, 18)
+```
+
+Question being asked: is it so unlikely to get sample means that are so different by random chance that they were drawn from populations of the same mean
+
+```{r}
+# two sample t-test. asking if these are different enough in either direction to reject the null hypothesis
+tree_t <- t.test(oak_trees, pine_trees)
+
+# null hypothesis : mean heights are the same
+# ie.: trees are drawn from populations with the same mean height
+```
+- default is a welsh two sample t test, null = difference of our sample means is equal to zero. 
+what is the probability of being that value or more extreme
+what is the probability taht i can take two samples that are at least this far from zero by random chance in either direction. 
+
+"if you took two samples means from populations with the same mean (if these observations were drawn from tree pops w) then there is a 28.7% chance of taking a random sample from each pop and findin that the samples means are at least as different as we found with random chance."
+
+suppose we want less than a 5% chance that we got sample means from populatoins with the same mean.
+This difference between sample means here is likely to be found between sample means randomly pulled from populations with the same mean. Therefore I don't think I have enough evidence to think that 
+
+How would you write out "t(df) = t-statistic, p = p-value"
+
+"The mean heights of oak and pine trees were (X +- Y) and (X +- Y), respectively, and the difference was not significant (t(`r tree_t$parameter`) = `r tree_t$statistic`, p = `r tree_t$p.value`)
+
+- what distribution you are using and the sample size "t(df) = input t-statistic, p = p-value"
+do not have enough evidence to reject the null hypothesis. 
+
+"t(df) = t-statistic, p = p-value"
+
+*AVOID*: p = 0
+
+When things get really small (usually p < 0.001)
+
+*Not great:* p = 0.0000000000013
+*better* p < 0.001
+
+## Part 3: 
+
+Do we think there is a significant diffeence in gas milege between electric cars and gas cars?
+
+### Take and look at data
+
+Using built-in data set `mpg`
+
+```{r}
+# use %in% for a vector. want you to look at all rows and if the class column of that row contains either values in that vector I want you to keep that row
+compact_suv <- mpg %>% 
+  filter(class %in% c("compact", "suv"))
+
+# check for remaining levels, unique checks if filter works
+unique(compact_suv$class)
+
+```
+
+Create a histogram of city gas mileage (cty) faceted by class starting from compact_suv. 
+
+Show distribution of gas mileages for compact cars and suvs in the dataset side by side
+
+```{r}
+# add facet wrap as a function of class to sep
+# facet grid will also include any empty plots 
+# change the number of bins
+ggplot(data = compact_suv, aes(x = cty)) +
+  geom_histogram(bins = 12) +
+  facet_wrap(~ class)
+```
+
+ex: facet grid will create a grid `facet_grid(Rating~Species)
+
+Based on the central limit theorm, with these sizes we can assume the means would be pretty normally distributed
+
+qq plot plots theoretical values if this was an ideal sample. The closest it is to linear, the closer these samples are to being drawn from the same pop mean
+
+```{r}
+ggplot(data = compact_suv, aes(sample = cty)) +
+  geom_qq() +
+  facet_wrap(~ class)
+```
+
+Left graph is mostly linear with some skews in the tail ends. A means comparison is appropriate. So with all that info implied I feel comfortable using a two sample t test.
+
+decide its appropriate to use means and t tests to compare these two samples
+
+Find summary statistics for each group use `group_by` and `summarize
+
+```{r}
+# you can group by multiple varibales but here we only need one
+car_stats <- compact_suv %>% 
+  group_by(class) %>% 
+  summarize(
+    mean_city = mean(cty),
+    sd_city = sd(cty),
+    sample_size = n()
+  )
+```
+
+The T-test() function really wants vectors of things. use the pull() function to pull out a vector fram a data frame **rare to do**
+
+```{r}
+compact_sample <- compact_suv %>% 
+  filter(class == "compact") %>% 
+  pull(cty)
+```
+
+### Your turn: do the same thing to get a vector of city gas mileages for SUVs
+
+```{r}
+suv_sample <- compact_suv %>% 
+  filter(class == "suv") %>% 
+  pull(cty)
+```
+
+HAVE YOU DETERMIEND
+
+use a t test ot test null hyoothesis that mean city gas mileages for suvs and compact cares are the same.
+we are using a t test to see if we have enough evidence to reject the null hypothesis.
+
+```{r}
+t.test(compact_sample, suv_sample)
+```
+
+Is it possible that these samples are drawn from populations with the same mean gas milage? Yes. but is it likely? No.
+We would definitley rejct the null hypothesis that the mean gas mileages are the same.
+
+There is a significat difference in mean city gas mileage between compact cars and suvs (then write in summary inline) (t(df) = t-statistic, p < p.value)
